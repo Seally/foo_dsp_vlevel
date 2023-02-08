@@ -1,0 +1,14 @@
+.vs/
+*.vcxproj.user
+
+# Ignore SDK stuff
+sdk-license.txt
+sdk-readme.html
+foobar2000/foo_input_validator/
+foobar2000/foobar2000_component_client/
+foobar2000/helpers/
+foobar2000/SDK/
+foobar2000/shared/
+
+pfc/
+libPPUI/

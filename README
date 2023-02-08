@@ -1,0 +1,64 @@
+foo_dsp_vlevel
+==============
+
+VLevel
+------
+  VLevel is a dynamic compressor which amplifies the quiet parts of music.
+  VLevel is developing by Tom Felker at http://vlevel.sf.net/ .
+
+foo_dsp_vlevel
+--------------
+  foo_dsp_vlevel is a VLevel foobar2000 plugin.
+  foo_dsp_vlevel requires foobar2000 0.9.5
+
+Forum
+-----
+  in English:
+    Hydrogenaudio Forums/Hosted Forums/foobar2000/3rd Party Plugins - (fb2k)
+    http://www.hydrogenaudio.org/index.php?showtopic=22057
+
+  in Japanese:
+    2channel/Software/foobar2000 part9
+    http://pc5.2ch.net/test/read.cgi/software/1084172362/
+
+Author
+------
+Tom Felker
+wore <info@wore.ma.cx>
+Wiesl
+
+ChangeLog
+---------
+* Sun Mar 2 2008 Wiesl 20080302.0
+- Updated README
+- Updated Version
+
+* Wed Nov 7 2007 Wiesl 20071107.0
+- made ready for 0.9.x series
+- config settings now work well, added useful limits for max multiplier
+- added dB scale
+- added debug code by wiesl
+
+* Tue Jun 1 2004 wore <info@wore.ma.cx> 20040601.5
+- some fix to compile.
+
+* Mon May 31 2004 wore <info@wore.ma.cx> 20040530.4-tom
+- I got great mail with new code from Tom, the VLevel author.
+  He made many modifications to make it stable.
+- I'll put binary later.
+
+* Sun May 30 2004 wore <info@wore.ma.cx> 20040530.3
+- I've fprintf debug to find why Access violation occured.
+  Normally, on_chunk is called with 1024 samples.
+  But, when fb2k crash, on_chunk is called with more than 88200 samples.
+  Buffers allocated only 44100 or 48000 samples.
+- To fix this bug, I allocate buffer for 5 seconds.
+  But it is not good way.
+  I'd like to rewrite on_chunk till this weekend.
+
+* Sun May 30 2004 wore <info@wore.ma.cx> 20040530.2
+- remove vl=0; in cleanup_buffers and tested it, but still crashes.
+
+* Sun May 30 2004 wore <info@wore.ma.cx> 20040530
+- initial version.
+- based on vlevel-bin.cpp and foobar2k SDK's hardlimit.cpp

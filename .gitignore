@@ -1,5 +1,8 @@
 .vs/
 *.vcxproj.user
+packages/
+Debug/
+Debug FB2K/
 
 # Ignore SDK stuff
 sdk-license.txt

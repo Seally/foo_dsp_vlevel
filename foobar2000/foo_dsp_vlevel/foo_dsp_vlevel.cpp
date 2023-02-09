@@ -21,6 +21,7 @@
 // wore <info@wore.ma.cx>
 
 #include "stdafx.h"
+#include <helpers/helpers.h>
 
 #include <math.h>
 #include <float.h>
@@ -35,21 +36,21 @@
 // http://en.wikipedia.org/wiki/C_preprocessor
 // http://www.geocities.com/davinpearson/research/1999/sm4dcp.html
 
-// 		DEBUG("on_playlist_created begin (\"%s\", %li)", p_name, p_index)
+// 		PRINT_DEBUG("on_playlist_created begin (\"%s\", %li)", p_name, p_index)
 #ifdef FOO_DSP_VLEVEL_DEBUG
-#define DEBUG(format, ...)                                       \
+#define PRINT_DEBUG(format, ...)                                       \
 	do                                                           \
 	{                                                            \
 		MyDebug::fprintf_flush((format), __VA_ARGS__);             \
 	} while (0);
 #else
-#define DEBUG(format, ...)
+#define PRINT_DEBUG(format, ...)
 #endif
 
 #ifdef FOO_DSP_VLEVEL_DEBUG
-  #define DEBUG_VLEVEL_INFO(prefix, var) DEBUG("%s: Using Strength=%lf, MaxMultiplier=%li, BufferLength=%li", (prefix), (double)((var).strength) / 100, (long)((var).max_multiplier), (long)((var).buffer_length));
+  #define PRINT_DEBUG_INFO(prefix, var) PRINT_DEBUG("%s: Using Strength=%lf, MaxMultiplier=%li, BufferLength=%li", (prefix), (double)((var).strength) / 100, (long)((var).max_multiplier), (long)((var).buffer_length));
 #else
-  #define DEBUG_VLEVEL_INFO(prefix, var)
+  #define PRINT_DEBUG_INFO(prefix, var)
 #endif
 
 #ifdef FOO_DSP_VLEVEL_DEBUG
@@ -62,11 +63,11 @@ public:
 	MyDebug()
 	{
 		log = fopen("C:\\foobar2000.log", "w");
-		DEBUG("opened log"); 
+		PRINT_DEBUG("opened log"); 
 	}
 	virtual ~MyDebug()
 	{
-		DEBUG("closed log");
+		PRINT_DEBUG("closed log");
 		(void)fclose(log);
 	}
 
@@ -104,10 +105,11 @@ struct vlevel_preset_info
 	t_int8 buffer_length;
 
 	bool get_data(const dsp_preset & p_data)
-	{
-		DEBUG("vlevel_preset_info::get_data() entry");
+    {
 
-		DEBUG("vlevel_preset_info::datasize=%li, should be=%li", (long)p_data.get_data_size(), sizeof(vlevel_preset_info));
+		PRINT_DEBUG("vlevel_preset_info::get_data() entry");
+
+		PRINT_DEBUG("vlevel_preset_info::datasize=%li, should be=%li", (long)p_data.get_data_size(), sizeof(vlevel_preset_info));
 
 		if (p_data.get_data_size() != sizeof(vlevel_preset_info)) return false;
 		vlevel_preset_info temp = *(vlevel_preset_info *)p_data.get_data();
@@ -115,23 +117,23 @@ struct vlevel_preset_info
 		max_multiplier = temp.max_multiplier;
 		buffer_length = temp.buffer_length;
 
-		DEBUG_VLEVEL_INFO("vlevel_preset_info::get_data()", *this);
+		PRINT_DEBUG_INFO("vlevel_preset_info::get_data()", *this);
 		
-		DEBUG("vlevel_preset_info::get_data() return");
+		PRINT_DEBUG("vlevel_preset_info::get_data() return");
 		return true;
 	}
 
 	bool set_data(dsp_preset & p_data)
 	{
-		DEBUG("vlevel_preset_info::set_data() entry");
+		PRINT_DEBUG("vlevel_preset_info::set_data() entry");
 
-		DEBUG_VLEVEL_INFO("vlevel_preset_info::set_data()", *this);
+		PRINT_DEBUG_INFO("vlevel_preset_info::set_data()", *this);
 
 		vlevel_preset_info temp = {strength, max_multiplier, buffer_length};
 		//((dsp_preset &)p_data).set_data(&temp, sizeof(temp));
 		p_data.set_data(&temp, sizeof(temp));
 		
-		DEBUG("vlevel_preset_info::set_data() return");
+		PRINT_DEBUG("vlevel_preset_info::set_data() return");
 
 		return true;
 	}
@@ -143,7 +145,7 @@ class dialog_vlevel_config : public dialog_helper::dialog_modal
 public:
 	dialog_vlevel_config(vlevel_preset_info & p_info) : m_info(p_info)
 	{
-		DEBUG_VLEVEL_INFO("dialog_vlevel_config::dialog_vlevel_config", m_info);
+		PRINT_DEBUG_INFO("dialog_vlevel_config::dialog_vlevel_config", m_info);
 	}
 
 	virtual BOOL on_message(UINT msg, WPARAM wp, LPARAM lp)
@@ -154,7 +156,7 @@ public:
 			{
 				HWND slider;
 
-				DEBUG_VLEVEL_INFO("dialog_vlevel_config::on_message(WM_INITDIALOG)", m_info);
+				PRINT_DEBUG_INFO("dialog_vlevel_config::on_message(WM_INITDIALOG)", m_info);
 
 				// allow strength slider settings of 0-100 (strength*100) so users can set this parameter with 0.01 granularity
 				slider = GetDlgItem(get_wnd(),IDC_STRENGTH);
@@ -188,7 +190,7 @@ public:
 			{
 			case IDOK:
 				{
-					DEBUG_VLEVEL_INFO("dialog_vlevel_config::on_message(IDOK)", m_info);
+					PRINT_DEBUG_INFO("dialog_vlevel_config::on_message(IDOK)", m_info);
 
 					m_info.strength = uSendDlgItemMessage(get_wnd(),IDC_STRENGTH,TBM_GETPOS,0,0);
 
@@ -196,14 +198,14 @@ public:
 
 					m_info.buffer_length = uSendDlgItemMessage(get_wnd(),IDC_BUFFER_LENGTH,TBM_GETPOS,0,0);
 
-					DEBUG_VLEVEL_INFO("dialog_vlevel_config::on_message(IDOK)", m_info);
+					PRINT_DEBUG_INFO("dialog_vlevel_config::on_message(IDOK)", m_info);
 
 					end_dialog(1);
 				}
 				break;
 			case IDCANCEL:
 				{
-					DEBUG_VLEVEL_INFO("dialog_vlevel_config::on_message(IDCANCEL)", m_info);
+					PRINT_DEBUG_INFO("dialog_vlevel_config::on_message(IDCANCEL)", m_info);
 					end_dialog(0);
 				}
 				break;
@@ -360,7 +362,7 @@ class dsp_vlevel : public dsp_impl_base
 public:
 	dsp_vlevel(const dsp_preset& p_data)
 	{
-		DEBUG("dsp_vlevel::dsp_vlevel() entry");
+		PRINT_DEBUG("dsp_vlevel::dsp_vlevel() entry");
 
 		raw_value_buf = 0;
 		bufs = 0;
@@ -375,37 +377,37 @@ public:
 		dsp_preset_impl temp = p_data;
 		if (info.get_data(temp))
 		{
-			DEBUG("dsp_vlevel::dsp_vlevel() using NON default values");
-			DEBUG_VLEVEL_INFO("dialog_vlevel_config::on_message(IDCANCEL)", info);
+			PRINT_DEBUG("dsp_vlevel::dsp_vlevel() using NON default values");
+			PRINT_DEBUG_INFO("dialog_vlevel_config::on_message(IDCANCEL)", info);
 			strength = ((double)info.strength) / 100; // must be divided by 100!!
 			maxmultiplier = info.max_multiplier;
 			buffer_length = info.buffer_length;
 		}
 		else
 		{
-			DEBUG("dsp_vlevel::dsp_vlevel() using default values");
+			PRINT_DEBUG("dsp_vlevel::dsp_vlevel() using default values");
 		}
 
 		vl = new VolumeLeveler();
 		vl->SetStrength(strength);
 		vl->SetMaxMultiplier(maxmultiplier);
 
-		DEBUG("dsp_vlevel::dsp_vlevel() return");
+		PRINT_DEBUG("dsp_vlevel::dsp_vlevel() return");
 	}
 
 	~dsp_vlevel()
 	{
-		DEBUG("dsp_vlevel::~dsp_vlevel() entry");
+		PRINT_DEBUG("dsp_vlevel::~dsp_vlevel() entry");
 
 		cleanup_buffers();
 		delete vl;
 		
-		DEBUG("dsp_vlevel::~dsp_vlevel() return");
+		PRINT_DEBUG("dsp_vlevel::~dsp_vlevel() return");
 	}
 
 	static GUID g_get_guid()
 	{
-		DEBUG("dsp_vlevel::g_get_guid() entry");
+		PRINT_DEBUG("dsp_vlevel::g_get_guid() entry");
 
 		// {EC001F79-9D79-4dc8-B7CB-40818D7A1009}
 		static const GUID guid =
@@ -415,32 +417,32 @@ public:
 
 	static void g_get_name(pfc::string_base & p_out)
 	{
-		DEBUG("dsp_vlevel::g_get_name() entry");
+		PRINT_DEBUG("dsp_vlevel::g_get_name() entry");
 
 		p_out = "VLevel";
 	}
 
 	static bool g_get_default_preset(dsp_preset & p_out)
 	{
-		DEBUG("dsp_vlevel::g_get_default_preset() entry");
+		PRINT_DEBUG("dsp_vlevel::g_get_default_preset() entry");
 
 		vlevel_preset_info info = {80, 25, 20};
 		p_out.set_owner(g_get_guid());
 		info.set_data(p_out);
 
-		DEBUG("dsp_vlevel::g_get_default_preset() return");
+		PRINT_DEBUG("dsp_vlevel::g_get_default_preset() return");
 		return true;
 	}
 
 	static bool g_have_config_popup()
 	{
-		DEBUG("dsp_vlevel::g_have_config_popup() entry");
+		PRINT_DEBUG("dsp_vlevel::g_have_config_popup() entry");
 		return true;
 	}
 
 	static bool g_show_config_popup(const dsp_preset & p_data, HWND p_parent, dsp_preset_edit_callback & p_callback)
 	{
-		DEBUG("dsp_vlevel::g_show_config_popup() entry");
+		PRINT_DEBUG("dsp_vlevel::g_show_config_popup() entry");
 
 		vlevel_preset_info info;
 		dsp_preset_impl temp = p_data;
@@ -450,7 +452,7 @@ public:
 
 		int ok = dlg.run(IDD_CONFIG, p_parent);
 
-		DEBUG("dlg.run()=%i", ok);
+		PRINT_DEBUG("dlg.run()=%i", ok);
 
 		if (!ok) return false;
 		// Hint from http://d.hatena.ne.jp/raspy/
@@ -458,36 +460,36 @@ public:
 		bool retval = info.set_data(temp);
 		p_callback.on_preset_changed(temp);
 		
-		DEBUG("dsp_vlevel::g_show_config_popup() return");
+		PRINT_DEBUG("dsp_vlevel::g_show_config_popup() return");
 
 		return retval;
 	}
 
 	bool set_data(const dsp_preset & p_data)
 	{
-		DEBUG("dsp_vlevel::set_data() entry");
+		PRINT_DEBUG("dsp_vlevel::set_data() entry");
 
 		vlevel_preset_info info;
 		if (!info.get_data(p_data)) return false;
 		
-		DEBUG_VLEVEL_INFO("dsp_vlevel::set_data()", info);
+		PRINT_DEBUG_INFO("dsp_vlevel::set_data()", info);
 
 		vl->SetStrength((double)info.strength / 100);
 		vl->SetMaxMultiplier(info.max_multiplier);
 		buffer_length = info.buffer_length;
 		buffer_length_changed = true;
 
-		DEBUG("dsp_vlevel::set_data() return");
+		PRINT_DEBUG("dsp_vlevel::set_data() return");
 		return true;
 	}
 
 	bool on_chunk(audio_chunk * chunk, foobar2000_io::abort_callback & dummy)
 	{
-		DEBUG("dsp_vlevel::on_chunk() entry");
+		PRINT_DEBUG("dsp_vlevel::on_chunk() entry");
 
 		bool ret = on_chunk(chunk);
 
-		DEBUG("dsp_vlevel::on_chunk() return");
+		PRINT_DEBUG("dsp_vlevel::on_chunk() return");
 
 		return ret;
 	}
@@ -495,47 +497,47 @@ public:
 	// this is redundant iff on_endoftrack is always called first.
 	virtual void on_endofplayback(foobar2000_io::abort_callback & dummy)
 	{
-		DEBUG("dsp_vlevel::on_endofplayback() entry");
+		PRINT_DEBUG("dsp_vlevel::on_endofplayback() entry");
 
 		console::info("on_endofplayback");
 		flush_data();
 
-		DEBUG("dsp_vlevel::on_endofplayback() return");
+		PRINT_DEBUG("dsp_vlevel::on_endofplayback() return");
 	}
 
 	// we output the contents of our buffers
 	virtual void on_endoftrack(foobar2000_io::abort_callback & dummy)
 	{
-		DEBUG("dsp_vlevel::on_endoftrack() entry");
+		PRINT_DEBUG("dsp_vlevel::on_endoftrack() entry");
 
 		console::info("on_endoftrack");
 		flush_data();
 
-		DEBUG("dsp_vlevel::on_endofplayback() return");
+		PRINT_DEBUG("dsp_vlevel::on_endofplayback() return");
 	}
 
 	// called on seeks, so we drop our data
 	virtual void flush()
 	{
-		DEBUG("dsp_vlevel::flush() entry");
+		PRINT_DEBUG("dsp_vlevel::flush() entry");
 
 		console::info("flush");
 		vl->Flush();
 
-		DEBUG("dsp_vlevel::flush() return");
+		PRINT_DEBUG("dsp_vlevel::flush() return");
 	}
 
 	// this is called very often while playing
 	virtual double get_latency()
 	{
-		DEBUG("dsp_vlevel::get_latency()");
+		PRINT_DEBUG("dsp_vlevel::get_latency()");
 
 		return (srate == 0) ? 0 : ((double)(vl->GetSamples() - vl->GetSilence()) / srate);
 	}
 
 	virtual bool need_track_change_mark()
 	{
-		DEBUG("dsp_vlevel::need_track_change_mark()");
+		PRINT_DEBUG("dsp_vlevel::need_track_change_mark()");
 
 		// FIXME: have someone take a look at this, g-lite
 		return false;
@@ -547,7 +549,7 @@ static dsp_factory_t<dsp_vlevel> foo;
 
 // and last but not least the brand spankin' new about box - ss97
 #ifdef _DEBUG
-#define COMPONENT_VERSION_NAME "VLevel - DEBUG BUILD!"
+#define COMPONENT_VERSION_NAME "VLevel - PRINT_DEBUG BUILD!"
 #else
 #define COMPONENT_VERSION_NAME "VLevel"
 #endif

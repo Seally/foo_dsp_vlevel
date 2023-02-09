@@ -21,10 +21,9 @@
 // wore <info@wore.ma.cx>
 
 #include "stdafx.h"
-#include <helpers/helpers.h>
 
-#include <math.h>
-#include <float.h>
+#include <cmath>
+#include <cfloat>
 #include "volumeleveler.h"
 #include "resource.h"
 
@@ -139,100 +138,106 @@ struct vlevel_preset_info
 	}
 };
 
+class CVLevelDSPPopup : public CDialogImpl<CVLevelDSPPopup> {
+    vlevel_preset_info& m_info;
 
-class dialog_vlevel_config : public dialog_helper::dialog_modal
-{
+    CTrackBarCtrl m_strengthSlider;
+    CTrackBarCtrl m_maxMultiplierSlider;
+    CTrackBarCtrl m_bufferLengthSlider;
+
 public:
-	dialog_vlevel_config(vlevel_preset_info & p_info) : m_info(p_info)
-	{
-		PRINT_DEBUG_INFO("dialog_vlevel_config::dialog_vlevel_config", m_info);
-	}
+    CVLevelDSPPopup(vlevel_preset_info& p_info) : m_info(p_info) {
+        PRINT_DEBUG_INFO("CVLevelDSPPopup::CVLevelDSPPopup", m_info);
+        m_bMsgHandled;
+    }
 
-	virtual BOOL on_message(UINT msg, WPARAM wp, LPARAM lp)
-	{
-		switch(msg)
-		{
-		case WM_INITDIALOG: // set slider positions 
-			{
-				HWND slider;
+    enum { IDD = IDD_CONFIG };
 
-				PRINT_DEBUG_INFO("dialog_vlevel_config::on_message(WM_INITDIALOG)", m_info);
-
-				// allow strength slider settings of 0-100 (strength*100) so users can set this parameter with 0.01 granularity
-				slider = GetDlgItem(get_wnd(),IDC_STRENGTH);
-				uSendMessage(slider,TBM_SETRANGE,0,MAKELONG(0,100));
-				uSendMessage(slider,TBM_SETPOS,1,m_info.strength);
-
-				slider = GetDlgItem(get_wnd(),IDC_MAX_MULTIPLIER);
-				uSendMessage(slider,TBM_SETRANGE,0,MAKELONG(1,100)); // GW: Changed from 1-40 instead of 0-40 (so MAX_HUGE can not be set!)
-				uSendMessage(slider,TBM_SETPOS,1,m_info.max_multiplier);
-
-				// same idea as strength, slider from 1-50, which comes down to 0.1 to 5.0 seconds
-				slider = GetDlgItem(get_wnd(),IDC_BUFFER_LENGTH);
-				uSendMessage(slider,TBM_SETRANGE,0,MAKELONG(1,50));
-				uSendMessage(slider,TBM_SETPOS,1,m_info.buffer_length);
-
-				update_display(get_wnd());
-			}
-			break;
-		case WM_HSCROLL:
-			{
-				update_display(get_wnd());
-			}
-			break;
-		case WM_CLOSE:
-			{
-				end_dialog(0);
-			}
-			break;
-		case WM_COMMAND:
-			switch (wp)
-			{
-			case IDOK:
-				{
-					PRINT_DEBUG_INFO("dialog_vlevel_config::on_message(IDOK)", m_info);
-
-					m_info.strength = uSendDlgItemMessage(get_wnd(),IDC_STRENGTH,TBM_GETPOS,0,0);
-
-					m_info.max_multiplier = uSendDlgItemMessage(get_wnd(),IDC_MAX_MULTIPLIER,TBM_GETPOS,0,0);
-
-					m_info.buffer_length = uSendDlgItemMessage(get_wnd(),IDC_BUFFER_LENGTH,TBM_GETPOS,0,0);
-
-					PRINT_DEBUG_INFO("dialog_vlevel_config::on_message(IDOK)", m_info);
-
-					end_dialog(1);
-				}
-				break;
-			case IDCANCEL:
-				{
-					PRINT_DEBUG_INFO("dialog_vlevel_config::on_message(IDCANCEL)", m_info);
-					end_dialog(0);
-				}
-				break;
-			}
-			break;
-		}
-		return 0;
-	}
+    BEGIN_MSG_MAP_EX(CVLevelDSPPopup)
+        MSG_WM_INITDIALOG(_OnInitDialog)
+        COMMAND_HANDLER_EX(IDOK, BN_CLICKED, _OnButtonOk)
+        COMMAND_HANDLER_EX(IDCANCEL, BN_CLICKED, _OnButtonCancel)
+        MSG_WM_HSCROLL(_OnHScroll)
+    END_MSG_MAP()
 
 private:
-	void update_display(HWND wnd) // updates textual display of slider values
-	{
-		char temp[128];
+    void _RefreshStrengthLabel() {
+        const auto strength = m_strengthSlider.GetPos();
+        pfc::string_formatter msg;
 
-		// convert strength slider position to display the actual strength value VLevel will receive later on
-		sprintf(temp,"%1.2f",((double)uSendDlgItemMessage(get_wnd(),IDC_STRENGTH,TBM_GETPOS,0,0)) / 100); 
-		uSetDlgItemText(get_wnd(),IDC_STATIC_STRENGTH,temp);
+        // convert strength slider position to display the actual strength value
+        // VLevel will receive later on
+        msg << pfc::format_float(strength / 100.0, 1, 2);
 
-		LRESULT maxmultiplier = uSendDlgItemMessage(get_wnd(),IDC_MAX_MULTIPLIER,TBM_GETPOS,0,0);
-		sprintf(temp,"%d (%+4.1lf dB)", maxmultiplier, 20*log10((double)maxmultiplier) );
-		uSetDlgItemText(get_wnd(),IDC_STATIC_MAX_MULTIPLIER,temp);
+        ::uSetDlgItemText(*this, IDC_STATIC_STRENGTH, msg);
+    }
 
-		sprintf(temp,"%1.1f s",((double)uSendDlgItemMessage(get_wnd(),IDC_BUFFER_LENGTH,TBM_GETPOS,0,0)) / 10);
-		uSetDlgItemText(get_wnd(),IDC_STATIC_BUFFER_LENGTH,temp);
-	}
+    void _RefreshMaxMultiplierLabel() {
+        const auto maxMultiplier = m_maxMultiplierSlider.GetPos();
+        const auto decibels = 20 * std::log10(maxMultiplier);
 
-	vlevel_preset_info & m_info;
+        pfc::string_formatter msg;
+        msg << maxMultiplier << " (+" << pfc::format_float(decibels, 3, 1) << " dB)";
+
+        ::uSetDlgItemText(*this, IDC_STATIC_MAX_MULTIPLIER, msg);
+    }
+
+    void _RefreshBufferLengthLabel() {
+        const auto bufferLength = m_bufferLengthSlider.GetPos();
+
+        pfc::string_formatter msg;
+        msg << pfc::format_float(bufferLength / 10.0, 1, 1) << " s";
+
+        ::uSetDlgItemText(*this, IDC_STATIC_BUFFER_LENGTH, msg);
+    }
+
+    void _RefreshLabels() {
+        _RefreshStrengthLabel();
+        _RefreshMaxMultiplierLabel();
+        _RefreshBufferLengthLabel();
+    }
+
+    BOOL _OnInitDialog(CWindow, LPARAM) {
+        m_strengthSlider = GetDlgItem(IDC_STRENGTH);
+        m_maxMultiplierSlider = GetDlgItem(IDC_MAX_MULTIPLIER);
+        m_bufferLengthSlider = GetDlgItem(IDC_BUFFER_LENGTH);
+
+        // allow strength slider settings of 0-100 (strength*100) so users can
+        // set this parameter with 0.01 granularity
+        m_strengthSlider.SetRange(0, 100, FALSE);
+        m_strengthSlider.SetPos(m_info.strength);
+
+        // GW: Changed from 1-40 instead of 0-40 (so MAX_HUGE can not be set!)
+        m_maxMultiplierSlider.SetRange(1, 100, FALSE);
+        m_maxMultiplierSlider.SetPos(m_info.max_multiplier);
+
+        m_bufferLengthSlider.SetRange(1, 50, FALSE);
+        m_bufferLengthSlider.SetPos(m_info.buffer_length);
+
+        _RefreshLabels();
+
+        return TRUE;
+    }
+
+    void _OnButtonOk(UINT, int id, CWindow) {
+        PRINT_DEBUG_INFO("CVLevelDSPPopup::OnButtonOk()", m_info);
+
+        m_info.strength = m_strengthSlider.GetPos();
+        m_info.max_multiplier = m_maxMultiplierSlider.GetPos();
+        m_info.buffer_length = m_bufferLengthSlider.GetPos();
+
+        PRINT_DEBUG_INFO("CVLevelDSPPopup::OnButtonOk()", m_info);
+
+        EndDialog(id);
+    }
+
+    void _OnButtonCancel(UINT, int id, CWindow) {
+        EndDialog(id);
+    }
+
+    void _OnHScroll(UINT nSBCode, UINT nPos, CScrollBar pScrollBar) {
+        _RefreshLabels();
+    }
 };
 
 
@@ -448,21 +453,23 @@ public:
 		dsp_preset_impl temp = p_data;
 		if (!info.get_data(temp)) return false;
 
-		dialog_vlevel_config dlg(info);
+        CVLevelDSPPopup popup(info);
 
-		int ok = dlg.run(IDD_CONFIG, p_parent);
+        const auto commandResult = popup.DoModal(p_parent);
 
-		PRINT_DEBUG("dlg.run()=%i", ok);
+        PRINT_DEBUG("popup.DoModal()=%i", commandResult);
 
-		if (!ok) return false;
-		// Hint from http://d.hatena.ne.jp/raspy/
+        if (commandResult == IDOK) {
+            bool retval = info.set_data(temp);
+            p_callback.on_preset_changed(temp);
 
-		bool retval = info.set_data(temp);
-		p_callback.on_preset_changed(temp);
-		
-		PRINT_DEBUG("dsp_vlevel::g_show_config_popup() return");
+            PRINT_DEBUG("dsp_vlevel::g_show_config_popup() return");
 
-		return retval;
+            return retval;
+        }
+
+        PRINT_DEBUG("dsp_vlevel::g_show_config_popup() return");
+        return false;
 	}
 
 	bool set_data(const dsp_preset & p_data)
@@ -553,8 +560,9 @@ static dsp_factory_t<dsp_vlevel> foo;
 #else
 #define COMPONENT_VERSION_NAME "VLevel"
 #endif
-DECLARE_COMPONENT_VERSION(COMPONENT_VERSION_NAME,"20080302.0",
+DECLARE_COMPONENT_VERSION(COMPONENT_VERSION_NAME,"20230209",
 						  "volume levelling plugin\n\n"
+                          "updated for 64-bit by Seally\n\n"
 						  "made ready for 0.9.x series, config settings now work well, added useful limits for max multiplier, added dB scale, added debug code by wiesl\n\n"
 						  "written by wore\n"
 						  "additional code by Tom Felker and ssamadhi97\n"

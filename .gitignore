@@ -1,8 +1,9 @@
 .vs/
 *.vcxproj.user
 packages/
-Debug/
-Debug FB2K/
+Debug*/
+Release*/
+x64*/
 
 # Visual Studio cache files
 *.aps

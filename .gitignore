@@ -4,6 +4,9 @@ packages/
 Debug/
 Debug FB2K/
 
+# Visual Studio cache files
+*.aps
+
 # Ignore SDK stuff
 sdk-license.txt
 sdk-readme.html

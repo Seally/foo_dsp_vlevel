@@ -363,6 +363,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="foo_dsp_vlevel.cpp" />
+    <ClCompile Include="pch.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="volumeleveler.cpp" />
   </ItemGroup>
   <ItemGroup>

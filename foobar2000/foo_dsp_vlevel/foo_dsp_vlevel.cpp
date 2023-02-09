@@ -20,8 +20,8 @@
 // based on vlevel-bin.cpp
 // wore <info@wore.ma.cx>
 
-#include "../foobar2000/SDK/foobar2000.h"
-#include "../foobar2000/helpers/helpers.h"
+#include "stdafx.h"
+
 #include <math.h>
 #include <float.h>
 #include "volumeleveler.h"

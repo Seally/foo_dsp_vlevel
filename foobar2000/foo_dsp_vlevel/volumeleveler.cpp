@@ -23,6 +23,7 @@
 #include <math.h>
 #include <iostream>
 
+#include "stdafx.h"
 #include "vlevel.h"
 #include "volumeleveler.h"
 

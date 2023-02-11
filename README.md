@@ -57,10 +57,10 @@ and rename the extension from `.zip` to `.fb2k-component`.
 
 ## Authors
 
-Seally (current)
-Tom Felker
-wore <info@wore.ma.cx>
-Wiesl
+* Seally (current)
+* Tom Felker
+* wore <info@wore.ma.cx>
+* Wiesl
 
 ## Changelog
 
